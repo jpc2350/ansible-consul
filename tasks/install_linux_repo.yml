@@ -69,8 +69,44 @@
         update_cache: true
       when: "ansible_os_family|lower == 'debian'"
 
-  when: "ansible_os_family|lower in [ 'debian', 'redhat' ]"
+  when: "ansible_os_family|lower in [ 'debian', 'redhat' ] && not consul_rhsm_repo_id"
   become: true
+
+- name: Attach RHSM subscription / repo
+  when: (consul_rhsm_repo_id)
+  become: true
+  block:
+    - name: Check if Hashicorp/Consul RHSM repo subscription is enabled
+      command:
+        cmd: "subscription-manager list --consumed --matches={{ consul_rhsm_subscription_name | quote }} --pool-only"
+      register: _subscription_manager_consumed
+      changed_when: false
+      when: (consul_rhsm_subscription_name)
+
+    - name: Find Hashicorp/Consul RHSM repo subscription pool id
+      command:
+        cmd: "subscription-manager list --available --matches={{ consul_rhsm_subscription_name | quote }} --pool-only"
+      register: _subscription_manager_available
+      changed_when: false
+      when:
+        - (consul_rhsm_subscription_name)
+        - _subscription_manager_consumed.stdout | length <= 0
+
+    - name: Attach Hashicorp/Consul RHSM subscription
+      command:
+        cmd: "subscription-manager attach --pool={{ _subscription_manager_available.stdout }}"
+      register: _subscription_manager_attach
+      changed_when: _subscription_manager_attach.stdout is search('Successfully attached a subscription')
+      failed_when: _subscription_manager_attach.stdout is search('could not be found')
+      when:
+        - (consul_rhsm_subscription_name)
+        - _subscription_manager_consumed.stdout | default() | length <= 0
+        - _subscription_manager_available.stdout | default() | length > 0
+
+    - name: Enable RHSM repository
+      rhsm_repository:
+        name: "{{ consul_rhsm_repo_id }}"
+        state: enabled
 
 - name: Install consul package
   package:
