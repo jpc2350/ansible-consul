@@ -691,6 +691,22 @@ auto_encrypt:
 - Supported distros: Amazon Linux, CentOS, Debian, Fedora, Ubuntu, Red Hat, Rocky.
 - Default value: false
 
+### `consul_rhsm_repo_id`
+
+- Name of rhsm repo
+- Set this to the name of your rhsm repo when installing Consul via a RHSM repository (RedHat Satellite/Foreman/etc.).
+  When set, you need make sure `consul_install_from_repo` is set to `true` to enable repo install. And optionally also
+  the rhsm subscription name with `consul_rhsm_subscription_name`.
+- Default value: null
+
+### `consul_rhsm_subscription_name`
+
+- Name of rhsm subscription
+- Set the rhsm subscription name to attach the rhsm subscription via subscription-manager.
+  When set, you need make sure `consul_install_hashi_repo` is set to `true` to enable repo install. And also that
+  `consul_rhsm_repo_id` is set.
+- Default value: null
+
 ### `consul_ui`
 
 - Enable the consul ui?
